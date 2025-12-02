@@ -9,7 +9,6 @@ h2 {
     color: #333; 
 }
 
-/* Стилі для кнопок та UI */
 .network { 
     padding: 10px; 
     margin-bottom: 8px; 
@@ -50,7 +49,6 @@ h2 {
     color: white; 
 }
 
-/* Модальне вікно */
 .modal { 
     display: none; 
     position: fixed; 
@@ -118,7 +116,6 @@ button.cancel {
     color: #333; 
 }
 
-/* Додаткові класи */
 .header-container {
     text-align: center;
 }
@@ -128,7 +125,6 @@ button.cancel {
     font-size: 0.8rem;
 }
 
-/* Екран вітання Bluetooth */
 #bt-connect-screen { 
     text-align: center; 
     margin-top: 50px; 
@@ -143,7 +139,6 @@ button.cancel {
     box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
 }
 
-/* Основний екран (ховаймо поки не підключимось) */
 #wifi-screen { 
     display: none; 
 }
