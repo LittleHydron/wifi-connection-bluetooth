@@ -3,43 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPi Wi-Fi Setup via BLE</title>
-    <link rel="stylesheet" href="style.css">
+    <title>RPi WiFi Setup</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 500px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; font-size: 1rem; cursor: pointer; margin-bottom: 1rem; width: 100%; }
+        button:disabled { background: #ccc; }
+        .network-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .status { padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 1rem; font-family: monospace; font-size: 0.9rem; }
+        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+    </style>
 </head>
 <body>
 
-<div id="bt-connect-screen">
-    <h2>Raspberry Pi Wi-Fi Manager</h2>
-    <p>Натисніть кнопку, щоб знайти пристрій Raspberry Pi по Bluetooth.</p>
-    <button id="bt-connect-btn" onclick="initializeBluetooth()">📡 Знайти Raspberry Pi</button>
-</div>
+    <h2>🛠️ RPi WiFi Configurator</h2>
+    
+    <div id="status" class="status">Готово до підключення...</div>
+    
+    <button id="connectBtn">🔌 1. Підключитися до USB</button>
+    <button id="scanBtn" disabled>🔄 2. Сканувати мережі</button>
 
-<div id="wifi-screen">
-    <div class="header-container">
-        <h2>Available Networks</h2>
-        <div id="status-msg">Сканування...</div>
-        <button onclick="requestWifiList()" class="refresh-btn">🔄 Оновити список</button>
-    </div>
-    <div id="networks"></div>
-</div>
+    <div id="list"></div>
 
-<div class="modal" id="connectModal">
-    <div class="modal-content">
-        <div class="modal-header">Підключення до <span id="modal-ssid"></span></div>
-        <input type="hidden" id="ssid-input">
-        
-        <div id="password-group">
-            <label>Пароль Wi-Fi</label><br>
-            <input type="password" id="password-input" placeholder="Введіть пароль">
-        </div>
-        
-        <div class="modal-footer">
-            <button class="cancel" onclick="closeModal()">Відміна</button>
-            <button id="connect-btn" onclick="sendCredentials()">Підключитись</button>
-        </div>
-    </div>
-</div>
+<script>
+    let port, writer, reader;
 
-<script src="script.js"></script>
+    const statusDiv = document.getElementById('status');
+    const connectBtn = document.getElementById('connectBtn');
+    const scanBtn = document.getElementById('scanBtn');
+    const listDiv = document.getElementById('list');
+
+    function log(msg) { statusDiv.innerText = msg; }
+
+    // 1. ПІДКЛЮЧЕННЯ
+    connectBtn.onclick = async () => {
+        if (!navigator.serial) return alert("Потрібен Chrome або Edge!");
+        try {
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 115200 });
+            
+            log("✅ USB підключено!");
+            connectBtn.disabled = true;
+            scanBtn.disabled = false;
+            
+            readLoop(); // Починаємо слухати відповіді
+        } catch (e) {
+            log("❌ Помилка: " + e);
+        }
+    };
+
+    // 2. ЧИТАННЯ ДАНИХ
+    async function readLoop() {
+        const textDecoder = new TextDecoderStream();
+        const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+        const reader = textDecoder.readable.getReader();
+
+        let buffer = "";
+
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += value;
+
+                let lines = buffer.split('\n');
+                buffer = lines.pop(); // Залишаємо незавершене
+
+                for (const line of lines) {
+                    if (line.trim()) handleResponse(line);
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // 3. ОБРОБКА ВІДПОВІДІ
+    function handleResponse(jsonStr) {
+        try {
+            const msg = JSON.parse(jsonStr);
+            console.log("Received:", msg);
+
+            if (msg.type === "scan") {
+                renderList(msg.data);
+                log("✅ Сканування завершено");
+            } else if (msg.type === "connect") {
+                if (msg.data.status === "success") {
+                    alert("Успіх! " + msg.data.msg);
+                    log("🌐 " + msg.data.msg);
+                } else {
+                    alert("Помилка: " + msg.data.msg);
+                    log("❌ " + msg.data.msg);
+                }
+            }
+        } catch (e) { console.log("JSON Error:", e); }
+    }
+
+    // 4. ВІДПРАВКА КОМАНД
+    async function send(data) {
+        const encoder = new TextEncoder();
+        const writer = port.writable.getWriter();
+        await writer.write(encoder.encode(data + "\n"));
+        writer.releaseLock();
+    }
+
+    scanBtn.onclick = () => {
+        log("🔍 Сканую...");
+        listDiv.innerHTML = "";
+        send("SCAN");
+    };
+
+    function renderList(networks) {
+        listDiv.innerHTML = networks.map(n => `
+            <div class="network-item">
+                <div>
+                    <strong>${n.ssid}</strong> <small>(${n.signal}%)</small>
+                </div>
+                <button style="width:auto; margin:0; font-size:0.8rem" 
+                        onclick="connect('${n.ssid}')">Connect</button>
+            </div>
+        `).join('');
+    }
+
+    window.connect = (ssid) => {
+        const pass = prompt(`Пароль для ${ssid}:`);
+        if (pass !== null) {
+            log(`⏳ Підключаюсь до ${ssid}...`);
+            send(`CONNECT|${ssid}|${pass}`);
+        }
+    };
+
+</script>
 </body>
 </html>
