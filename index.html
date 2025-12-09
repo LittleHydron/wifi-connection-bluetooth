@@ -107,8 +107,8 @@
     scanBtn.onclick = () => {
         log("🔍 Сканую...");
         listDiv.innerHTML = "";
-        send("SCAN");
-    };
+        sendCommand({ cmd: "scan" }); 
+    }
 
     function renderList(networks) {
         listDiv.innerHTML = networks.map(n => `
