@@ -40,7 +40,7 @@
                 
                 // 1. Запит пристрою з фільтрацією по Service UUID
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'MyRaspberryPi' }],
+                    filters: [{ name: 'gateway' }],
                     optionalServices: [SRV_UUID]
                 });
 
