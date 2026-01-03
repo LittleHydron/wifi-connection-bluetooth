@@ -3,187 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPi WiFi Setup</title>
+    <title>Raspberry Pi BLE Controller</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 500px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
-        
-        /* Основні кнопки */
-        .main-btn { background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 1rem; cursor: pointer; margin-bottom: 1rem; width: 100%; transition: background 0.2s; }
-        .main-btn:hover { background: #0056b3; }
-        .main-btn:disabled { background: #ccc; cursor: not-allowed; }
-
-        .network-item { border: 1px solid #eee; border-radius: 6px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        
-        /* Кнопки в списку */
-        .list-btn { width: auto; margin: 0; padding: 6px 12px; font-size: 0.85rem; border: none; border-radius: 4px; cursor: pointer; color: white; }
-        .btn-connect { background: #28a745; }
-        .btn-connect:hover { background: #218838; }
-        .btn-disconnect { background: #dc3545; }
-        .btn-disconnect:hover { background: #c82333; }
-
-        .status { padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 1rem; font-family: monospace; font-size: 0.9rem; border-left: 4px solid #007bff; }
+        body { font-family: sans-serif; padding: 20px; }
+        button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
+        #status { margin-top: 10px; color: gray; }
     </style>
 </head>
 <body>
 
-    <h2>🛠️ RPi WiFi Configurator</h2>
+    <h1>Керування Raspberry Pi</h1>
     
-    <div id="status" class="status">Готово до підключення...</div>
-    
-    <button id="connectBtn" class="main-btn">🔌 1. Підключитися до USB</button>
-    <button id="scanBtn" class="main-btn" disabled>🔄 2. Сканувати мережі</button>
+    <button id="connectBtn">📡 Підключитися</button>
+    <br><br>
+    <input type="text" id="msgInput" placeholder="Введіть повідомлення" value="Hello Pi!">
+    <button id="sendBtn" disabled>Надіслати</button>
 
-    <div id="list"></div>
+    <div id="status">Статус: Відключено</div>
 
-<script>
-    let port, writer, reader;
+    <script>
+        // UUID повинні співпадати з тими, що в Python скрипті
+        const SRV_UUID = '12345678-1234-5678-1234-56789abcdef0';
+        const CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
 
-    const statusDiv = document.getElementById('status');
-    const connectBtn = document.getElementById('connectBtn');
-    const scanBtn = document.getElementById('scanBtn');
-    const listDiv = document.getElementById('list');
+        let bleDevice;
+        let bleCharacteristic;
 
-    function log(msg, type='') { 
-        statusDiv.innerText = msg; 
-        if(type === 'error') statusDiv.style.borderLeftColor = '#dc3545';
-        else if(type === 'success') statusDiv.style.borderLeftColor = '#28a745';
-        else statusDiv.style.borderLeftColor = '#007bff';
-    }
+        const connectBtn = document.getElementById('connectBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDiv = document.getElementById('status');
+        const msgInput = document.getElementById('msgInput');
 
-    // 1. ВІДКРИТТЯ ПОРТУ
-    connectBtn.onclick = async () => {
-        if (!navigator.serial) return alert("Потрібен Chrome, Edge або Opera!");
-        try {
-            port = await navigator.serial.requestPort();
-            await port.open({ baudRate: 115200 });
-            
-            log("✅ USB підключено!", 'success');
-            connectBtn.disabled = true;
-            scanBtn.disabled = false;
-            
-            readLoop();
-        } catch (e) {
-            log("❌ Помилка підключення: " + e, 'error');
-        }
-    };
+        connectBtn.addEventListener('click', async () => {
+            try {
+                statusDiv.innerText = "Статус: Пошук пристрою...";
+                
+                // 1. Запит пристрою з фільтрацією по Service UUID
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'MyRaspberryPi' }],
+                    optionalServices: [SRV_UUID]
+                });
 
-    // 2. ЦИКЛ ЧИТАННЯ
-    async function readLoop() {
-        const textDecoder = new TextDecoderStream();
-        const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
-        const reader = textDecoder.readable.getReader();
-        let buffer = "";
+                // 2. Підключення до GATT сервера
+                const server = await bleDevice.gatt.connect();
+                statusDiv.innerText = "Статус: Підключено до GATT. Отримання сервісу...";
 
-        try {
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                if (value) {
-                    buffer += value;
-                    let lines = buffer.split('\n');
-                    buffer = lines.pop(); 
+                // 3. Отримання сервісу
+                const service = await server.getPrimaryService(SRV_UUID);
 
-                    for (const line of lines) {
-                        if (line.trim()) handleResponse(line);
-                    }
-                }
+                // 4. Отримання характеристики
+                bleCharacteristic = await service.getCharacteristic(CHAR_UUID);
+
+                statusDiv.innerText = "Статус: Готово до передачі!";
+                sendBtn.disabled = false;
+                connectBtn.disabled = true;
+
+                // Обробка відключення
+                bleDevice.addEventListener('gattserverdisconnected', () => {
+                    statusDiv.innerText = "Статус: Відключено";
+                    sendBtn.disabled = true;
+                    connectBtn.disabled = false;
+                });
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "Помилка: " + error;
             }
-        } catch (e) { console.error("Read Error:", e); }
-    }
+        });
 
-    // 3. ОБРОБКА JSON
-    function handleResponse(jsonStr) {
-        try {
-            if (jsonStr.includes("Login") || jsonStr.includes("Password") || jsonStr.includes("GNU")) return;
-
-            const msg = JSON.parse(jsonStr);
-            console.log("RX:", msg);
-
-            // --- SCAN ---
-            if (msg.type === "scan_result") {
-                renderList(msg.data);
-                log(`✅ Знайдено ${msg.data.length} мереж`, 'success');
+        sendBtn.addEventListener('click', async () => {
+            if (!bleCharacteristic) return;
             
-            // --- CONNECT ---
-            } else if (msg.type === "connect_result") {
-                if (msg.status === "ok") {
-                    alert("Успіх! " + msg.msg);
-                    log("🌐 " + msg.msg, 'success');
-                    // Автоматично оновлюємо список після підключення
-                    setTimeout(() => sendCommand({ cmd: "scan" }), 1000);
-                } else {
-                    alert("Помилка: " + msg.msg);
-                    log("❌ " + msg.msg, 'error');
-                }
-            
-            // --- DISCONNECT ---
-            } else if (msg.type === "disconnect_result") {
-                if (msg.status === "ok") {
-                    alert("Відключено!");
-                    log("📴 " + msg.msg, 'success');
-                    // Автоматично оновлюємо список
-                    setTimeout(() => sendCommand({ cmd: "scan" }), 1000);
-                } else {
-                    alert("Помилка відключення");
-                    log("❌ " + msg.msg, 'error');
-                }
+            const message = msgInput.value;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+
+            try {
+                await bleCharacteristic.writeValue(data);
+                console.log("Надіслано:", message);
+                alert(`Надіслано: ${message}`);
+            } catch (error) {
+                console.error("Помилка запису:", error);
+                statusDiv.innerText = "Помилка запису даних";
             }
-
-        } catch (e) { console.log("JSON Parse Error:", e); }
-    }
-
-    async function sendCommand(obj) {
-        if (!port || !port.writable) return;
-        const encoder = new TextEncoder();
-        const writer = port.writable.getWriter();
-        await writer.write(encoder.encode(JSON.stringify(obj) + "\n"));
-        writer.releaseLock();
-    }
-
-    scanBtn.onclick = () => {
-        log("🔍 Сканую...", '');
-        listDiv.innerHTML = "";
-        sendCommand({ cmd: "scan" });
-    };
-
-    // Підключення
-    window.connectToWifi = (ssid) => {
-        const pass = prompt(`Пароль для ${ssid}:`);
-        if (pass !== null) {
-            log(`⏳ Підключаюсь до ${ssid}...`);
-            sendCommand({ cmd: "connect", ssid: ssid, password: pass });
-        }
-    };
-
-    // Відключення (НОВЕ)
-    window.disconnectWifi = (ssid) => {
-        if(confirm(`Розірвати з'єднання з ${ssid}?`)) {
-            log(`⏳ Відключаюсь від ${ssid}...`);
-            sendCommand({ cmd: "disconnect", ssid: ssid });
-        }
-    };
-
-    function renderList(networks) {
-        listDiv.innerHTML = networks.map(n => {
-            // Визначаємо, яку кнопку малювати
-            const actionButton = n.connected 
-                ? `<button class="list-btn btn-disconnect" onclick="disconnectWifi('${n.ssid}')">Disconnect</button>`
-                : `<button class="list-btn btn-connect" onclick="connectToWifi('${n.ssid}')">Connect</button>`;
-
-            return `
-            <div class="network-item">
-                <div>
-                    <strong>${n.ssid}</strong> 
-                    <span style="color:${n.signal > 70 ? 'green' : 'orange'}">
-                        (${n.signal}%)
-                    </span>
-                    ${n.connected ? '⭐' : ''}
-                </div>
-                ${actionButton}
-            </div>
-            `;
-        }).join('');
-    }
-</script>
+        });
+    </script>
 </body>
 </html>
