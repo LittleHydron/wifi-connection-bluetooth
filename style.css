@@ -1,0 +1,115 @@
+:root {
+    --primary: #007bff;
+    --bg: #f4f4f9;
+    --card-bg: #ffffff;
+    --text: #333;
+    --border: #ddd;
+    --success: #28a745;
+    --danger: #dc3545;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 450px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 { margin: 0; font-size: 20px; }
+h2 { font-size: 16px; margin: 0; }
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+.status-badge.connected { background: #d4edda; color: var(--success); }
+.status-badge.disconnected { background: #f8d7da; color: var(--danger); }
+
+/* Buttons */
+button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.primary-btn { background: var(--primary); color: white; width: 100%; }
+.primary-btn:hover { background: #0056b3; }
+.primary-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+.secondary-btn { background: #eee; color: #333; }
+.icon-btn { background: transparent; font-size: 18px; padding: 5px; }
+.icon-btn:hover { background: #eee; border-radius: 50%; }
+
+.disconnect-btn { 
+    background: transparent; 
+    color: var(--danger); 
+    border: 1px solid var(--danger);
+    padding: 5px 10px;
+}
+
+/* Network List */
+.network-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.network-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+}
+.network-item:last-child { border-bottom: none; }
+
+.network-info { display: flex; flex-direction: column; }
+.ssid { font-weight: 500; }
+.signal { font-size: 11px; color: #777; margin-top: 2px; }
+
+.connected-row { background-color: #e8f5e9; border-radius: 6px; }
+
+/* Utilities */
+.hidden { display: none !important; }
+
+/* Modal */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex; justify-content: center; align-items: center;
+}
+.modal-content {
+    background: white; padding: 20px; border-radius: 10px;
+    width: 300px; display: flex; flex-direction: column; gap: 15px;
+}
+input {
+    padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions button { width: auto; }

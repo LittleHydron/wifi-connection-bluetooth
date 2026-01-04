@@ -3,90 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi BLE Controller</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
-        #status { margin-top: 10px; color: gray; }
-    </style>
+    <title>Raspberry Pi Wi-Fi Manager</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>Керування Raspberry Pi</h1>
-    
-    <button id="connectBtn">📡 Підключитися</button>
-    <br><br>
-    <input type="text" id="msgInput" placeholder="Введіть повідомлення" value="Hello Pi!">
-    <button id="sendBtn" disabled>Надіслати</button>
+    <div class="container">
+        <header>
+            <h1>Wi-Fi Manager</h1>
+            <div id="connectionStatus" class="status-badge disconnected">Disconnected</div>
+        </header>
 
-    <div id="status">Статус: Відключено</div>
+        <div id="connectSection">
+            <button id="bleConnectBtn" class="primary-btn">📡 Підключитися до Raspberry Pi</button>
+        </div>
 
-    <script>
-        // UUID повинні співпадати з тими, що в Python скрипті
-        const SRV_UUID = '12345678-1234-5678-1234-56789abcdef0';
-        const CHAR_UUID = '12345678-1234-5678-1234-56789abcdef1';
-
-        let bleDevice;
-        let bleCharacteristic;
-
-        const connectBtn = document.getElementById('connectBtn');
-        const sendBtn = document.getElementById('sendBtn');
-        const statusDiv = document.getElementById('status');
-        const msgInput = document.getElementById('msgInput');
-
-        connectBtn.addEventListener('click', async () => {
-            try {
-                statusDiv.innerText = "Статус: Пошук пристрою...";
-                
-                // 1. Запит пристрою з фільтрацією по Service UUID
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: [SRV_UUID]
-                });
-
-                // 2. Підключення до GATT сервера
-                const server = await bleDevice.gatt.connect();
-                statusDiv.innerText = "Статус: Підключено до GATT. Отримання сервісу...";
-
-                // 3. Отримання сервісу
-                const service = await server.getPrimaryService(SRV_UUID);
-
-                // 4. Отримання характеристики
-                bleCharacteristic = await service.getCharacteristic(CHAR_UUID);
-
-                statusDiv.innerText = "Статус: Готово до передачі!";
-                sendBtn.disabled = false;
-                connectBtn.disabled = true;
-
-                // Обробка відключення
-                bleDevice.addEventListener('gattserverdisconnected', () => {
-                    statusDiv.innerText = "Статус: Відключено";
-                    sendBtn.disabled = true;
-                    connectBtn.disabled = false;
-                });
-
-            } catch (error) {
-                console.error(error);
-                statusDiv.innerText = "Помилка: " + error;
-            }
-        });
-
-        sendBtn.addEventListener('click', async () => {
-            if (!bleCharacteristic) return;
+        <div id="wifiSection" class="hidden">
+            <div class="wifi-header">
+                <h2>Доступні мережі</h2>
+                <button id="refreshBtn" class="icon-btn">🔄</button>
+            </div>
             
-            const message = msgInput.value;
-            const encoder = new TextEncoder();
-            const data = encoder.encode(message);
+            <ul id="networkList" class="network-list">
+                <li class="loading">Очікування даних...</li>
+            </ul>
+        </div>
+    </div>
 
-            try {
-                await bleCharacteristic.writeValue(data);
-                console.log("Надіслано:", message);
-                alert(`Надіслано: ${message}`);
-            } catch (error) {
-                console.error("Помилка запису:", error);
-                statusDiv.innerText = "Помилка запису даних";
-            }
-        });
-    </script>
+    <div id="passwordModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Підключення до <span id="modalSsidName"></span></h3>
+            <input type="password" id="wifiPassword" placeholder="Введіть пароль" />
+            <div class="modal-actions">
+                <button id="cancelModalBtn" class="secondary-btn">Скасувати</button>
+                <button id="confirmConnectBtn" class="primary-btn">Підключитися</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
