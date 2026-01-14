@@ -91,7 +91,7 @@ async function sendData() {
         const start = performance.now();
         
         // Використовуємо твій клас для відправки
-        const response = await client.sendRequest(cmdId, respId, payloadObj);
+        const response = await client.sendRequest(cmdId, respId, payloadObj, 3000);
         
         const duration = (performance.now() - start).toFixed(0);
         log(`RX << (${duration}ms) Payload: ${JSON.stringify(response, null, 2)}`, 'rx');
