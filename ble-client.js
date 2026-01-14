@@ -90,6 +90,8 @@ export class BleClient {
      */
     async sendRequest(cmdId, expectedRespId, payload = {}, timeoutMs = 15000) {
         if (!this.isConnected()) throw new Error("Device not connected");
+        console.log("Sending a request")
+        console.log(cmdId);
 
         return new Promise(async (resolve, reject) => {
             // 1. Ставимо таймер безпеки (якщо сервер завис)
