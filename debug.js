@@ -8,6 +8,12 @@ const CONFIG = {
 
 const client = new BleClient(CONFIG.SRV_UUID, CONFIG.CHAR_UUID);
 
+// --- ВАЖЛИВО: Глобальний слухач відповідей ---
+// Сюди будуть падати всі відповіді від Raspberry Pi
+client.onMessage = (cmdId, payload) => {
+    log(`RX << CMD: ${cmdId}, Payload: ${JSON.stringify(payload, null, 2)}`, 'rx');
+};
+
 // UI елементи
 const ui = {
     connectBtn: document.getElementById('connectBtn'),
@@ -15,7 +21,6 @@ const ui = {
     status: document.getElementById('status'),
     controls: document.getElementById('controls'),
     cmdId: document.getElementById('cmdId'),
-    respId: document.getElementById('respId'),
     payload: document.getElementById('payload'),
     logArea: document.getElementById('logArea'),
 };
@@ -44,7 +49,7 @@ async function connect() {
         ui.controls.style.pointerEvents = 'auto';
 
         // Обробка розриву
-        client.onDisconnected = () => {
+        client.onDisconnect = () => {
             log('⚠️ Disconnected event', 'err');
             resetUI();
         };
@@ -57,7 +62,7 @@ async function connect() {
 
 async function disconnect() {
     try {
-        await client.disconnect();
+        client.disconnect(); // Це синхронна дія в новому клієнті
         resetUI();
     } catch (e) {
         log(`Disconnect error: ${e.message}`, 'err');
@@ -74,13 +79,14 @@ function resetUI() {
 
 async function sendData() {
     const cmdId = parseInt(ui.cmdId.value);
-    const respId = parseInt(ui.respId.value);
+    // respId нам більше не потрібен, бо ми не чекаємо конкретну відповідь
+    
     let payloadObj = {};
 
     try {
         payloadObj = JSON.parse(ui.payload.value);
     } catch (e) {
-        log('❌ Invalid JSON Payload', 'err');
+        log('❌ Invalid JSON Payload. Example: {"ssid": "test"} or {}', 'err');
         return;
     }
 
@@ -88,16 +94,14 @@ async function sendData() {
     ui.sendBtn.disabled = true;
 
     try {
-        const start = performance.now();
+        // Використовуємо новий простий метод send
+        // Він вирішиться, як тільки дані підуть в ефір (fire and forget)
+        await client.send(cmdId, payloadObj);
         
-        // Використовуємо твій клас для відправки
-        const response = await client.sendRequest(cmdId, respId, payloadObj, 100000);
-        
-        const duration = (performance.now() - start).toFixed(0);
-        log(`RX << (${duration}ms) Payload: ${JSON.stringify(response, null, 2)}`, 'rx');
+        log('✅ Sent successfully (waiting for response...)', 'sys');
 
     } catch (e) {
-        log(`❌ Error: ${e.message}`, 'err');
+        log(`❌ Send Error: ${e.message}`, 'err');
     } finally {
         ui.sendBtn.disabled = false;
     }
