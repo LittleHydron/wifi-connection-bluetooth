@@ -33,7 +33,7 @@ export class WifiConnectionService {
 
     async getAvailableNetworks() {
         const networks = await this._sendAndWait(
-            MESSAGES.GET_NETWORKS,
+            MESSAGES.GET_NETWORKS_CMD,
             MESSAGES.GET_NETWORKS_RESP,
             {},
             10000
@@ -43,7 +43,7 @@ export class WifiConnectionService {
 
     async connectToNetwork(ssid, password = "") {
         const response = await this._sendAndWait(
-            MESSAGES.CONNECT,
+            MESSAGES.CONNECT_CMD,
             MESSAGES.CONNECT_RESP,
             { ssid, password },
             25000
@@ -57,7 +57,7 @@ export class WifiConnectionService {
 
     async disconnectFromNetwork(ssid) {
         const response = await this._sendAndWait(
-            MESSAGES.DISCONNECT,
+            MESSAGES.DISCONNECT_CMD,
             MESSAGES.DISCONNECT_RESP,
             { ssid }
         );
