@@ -68,10 +68,12 @@ export class BleClient {
 
     async send(cmdId, payload = {}) {
         if (!this.isConnected()) return;
-        // Тут ми теж додаємо 0x03, хоча Raspberry це не обов'язково читає, 
-        // але це гарний тон дотримуватися одного протоколу.
-        const packet = Protocol.pack(cmdId, payload);
-        await this.characteristic.writeValue(packet);
+
+        const rawPacket = Protocol.pack(cmdId, payload);
+        const framedPacket = new Uint8Array(rawPacket.byteLength + 1);
+        framedPacket.set(new Uint8Array(rawPacket));
+        framedPacket[framedPacket.length - 1] = 0x03;
+        await this.characteristic.writeValue(framedPacket);
     }
     
     disconnect() {
