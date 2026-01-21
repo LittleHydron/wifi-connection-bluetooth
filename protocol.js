@@ -9,7 +9,7 @@ export const MESSAGES = {
     DISCONNECT_RESP: 0x06
 };
 
-const Protocol = {
+export const Protocol = {
     pack(cmdId, payloadObj) {
         const jsonStr = JSON.stringify(payloadObj);
         const encoder = new TextEncoder();
