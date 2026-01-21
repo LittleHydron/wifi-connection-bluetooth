@@ -40,18 +40,13 @@ export class BleClient {
         // --- ГОЛОВНА МАГІЯ ТУТ ---
         this.characteristic.addEventListener('characteristicvaluechanged', (event) => {
             const chunk = new Uint8Array(event.target.value.buffer);
-            const hexString = Array.from(chunk)
-                .map(byte => byte.toString(16).padStart(2, '0').toUpperCase())
-                .join(' ');
-
-            console.log(`📡 Отримано пакет (${chunk.length} B):`, hexString);
             
             // Проходимо по кожному байту
             for (let i = 0; i < chunk.length; i++) {
                 const byte = chunk[i];
                 console.log(byte)
 
-                if (byte === 0x03) { 
+                if (byte === 3) { 
                     // 1. Знайшли кінець повідомлення!
                     // Перетворюємо масив байтів у Uint8Array
                     const fullPacket = new Uint8Array(this.receiveBuffer);
