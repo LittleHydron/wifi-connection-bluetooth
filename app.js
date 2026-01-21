@@ -2,7 +2,7 @@ import { WifiConnectionService } from './wifi-connection-service.js';
 
 // Створюємо екземпляр сервісу
 const wifiService = new WifiConnectionService();
-let selectedSsid = null; // Запам'ятовуємо, яку мережу юзер хоче підключити
+let selectedSsid = null;
 
 // --- UI HELPERS ---
 // Об'єкт для зручного доступу до елементів HTML
