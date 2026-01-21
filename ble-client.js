@@ -8,7 +8,7 @@ export class BleClient {
         this.device = null;
         this.characteristic = null;
 
-        this.receiveBuffer = []; // <-- БУФЕР ДЛЯ СКЛЕЮВАННЯ
+        this.receiveBuffer = [];
 
         this.onMessage = (cmdId, payload) => { 
             console.log("Received:", cmdId, payload); 
@@ -28,7 +28,7 @@ export class BleClient {
 
         this.device.addEventListener('gattserverdisconnected', () => {
             this.onDisconnect();
-            this.receiveBuffer = []; // Чистимо буфер при розриві
+            this.receiveBuffer = [];
         });
 
         const server = await this.device.gatt.connect();
@@ -37,27 +37,21 @@ export class BleClient {
 
         await this.characteristic.startNotifications();
         
-        // --- ГОЛОВНА МАГІЯ ТУТ ---
         this.characteristic.addEventListener('characteristicvaluechanged', (event) => {
             const chunk = new Uint8Array(event.target.value.buffer);
             
-            // Проходимо по кожному байту
             for (let i = 0; i < chunk.length; i++) {
                 const byte = chunk[i];
 
                 if (byte === 3) { 
-                    // 1. Знайшли кінець повідомлення!
-                    // Перетворюємо масив байтів у Uint8Array
                     const fullPacket = new Uint8Array(this.receiveBuffer);
-                    this.receiveBuffer = []; // Очищаємо буфер для наступного разу
+                    this.receiveBuffer = [];
 
-                    // 2. Розпаковуємо
                     const data = Protocol.unpack(fullPacket);
                     if (data) {
                         this.onMessage(data.cmdId, data.payload);
                     }
                 } else {
-                    // 3. Це ще не кінець, додаємо в кошик
                     this.receiveBuffer.push(byte);
                 }
             }

@@ -27,7 +27,6 @@ export const Protocol = {
     unpack(dataView) {
         if (dataView.byteLength < 3) return null;
 
-        // const cmdId = dataView.getUint8(0);
         const cmdId = dataView[0];
         const payloadLen = dataView.byteLength - 3;
         
