@@ -46,7 +46,8 @@ export class WifiConnectionService {
             MESSAGES.CONNECT_CMD,
             MESSAGES.CONNECT_RESP,
             { ssid, password },
-            25000
+            // 25000
+            60000
         );
         
         if (!response.success) {
