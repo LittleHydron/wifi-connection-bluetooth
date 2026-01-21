@@ -9,35 +9,38 @@ export const MESSAGES = {
     DISCONNECT_RESP: 0x06
 };
 
-export const Protocol = {
+const Protocol = {
     pack(cmdId, payloadObj) {
         const jsonStr = JSON.stringify(payloadObj);
         const encoder = new TextEncoder();
         const payloadBytes = encoder.encode(jsonStr);
 
-        const buffer = new ArrayBuffer(1 + payloadBytes.length + 2);
+        // ID (1) + Payload (N) + Delimiter (1)
+        const buffer = new ArrayBuffer(1 + payloadBytes.length + 1);
         const uint8 = new Uint8Array(buffer);
 
         uint8[0] = cmdId;
         uint8.set(payloadBytes, 1);
+        uint8[uint8.length - 1] = 0x03; // Додаємо маркер кінця (ETX)
         
         return buffer;
     },
 
-    unpack(dataView) {
-        if (dataView.byteLength < 3) return null;
+    // Розпаковуємо вже ПОВНЕ повідомлення
+    unpack(uint8Array) {
+        if (uint8Array.length < 2) return null; 
 
-        const cmdId = dataView.getUint8(0);
-        const payloadLen = dataView.byteLength - 3;
+        const cmdId = uint8Array[0];
+        // Відрізаємо перший байт (ID)
+        const payloadBytes = uint8Array.slice(1); 
         
-        const payloadBytes = new Uint8Array(dataView.buffer, 1, payloadLen);
         const decoder = new TextDecoder();
-        
         try {
             const jsonStr = decoder.decode(payloadBytes);
             return { cmdId, payload: JSON.parse(jsonStr) };
         } catch (e) {
-            console.error("JSON Error:", e);
+            console.error("JSON Parse Error:", e);
+            console.log("Raw text was:", decoder.decode(payloadBytes));
             return { cmdId, payload: {} };
         }
     }

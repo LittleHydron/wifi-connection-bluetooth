@@ -8,15 +8,16 @@ export class BleClient {
         this.device = null;
         this.characteristic = null;
 
+        this.receiveBuffer = []; // <-- БУФЕР ДЛЯ СКЛЕЮВАННЯ
+
         this.onMessage = (cmdId, payload) => { 
-            console.log("Received data:", cmdId, payload); 
+            console.log("Received:", cmdId, payload); 
         };
-        
         this.onDisconnect = () => console.log("Disconnected");
     }
 
     isConnected() {
-        return this.device && this.device.gatt.connected && this.characteristic;
+        return this.device && this.device.gatt.connected;
     }
 
     async connect() {
@@ -27,6 +28,7 @@ export class BleClient {
 
         this.device.addEventListener('gattserverdisconnected', () => {
             this.onDisconnect();
+            this.receiveBuffer = []; // Чистимо буфер при розриві
         });
 
         const server = await this.device.gatt.connect();
@@ -34,10 +36,30 @@ export class BleClient {
         this.characteristic = await service.getCharacteristic(this.charUuid);
 
         await this.characteristic.startNotifications();
+        
+        // --- ГОЛОВНА МАГІЯ ТУТ ---
         this.characteristic.addEventListener('characteristicvaluechanged', (event) => {
-            const data = Protocol.unpack(event.target.value);
-            if (data) {
-                this.onMessage(data.cmdId, data.payload);
+            const chunk = new Uint8Array(event.target.value.buffer);
+            
+            // Проходимо по кожному байту
+            for (let i = 0; i < chunk.length; i++) {
+                const byte = chunk[i];
+
+                if (byte === 0x03) { 
+                    // 1. Знайшли кінець повідомлення!
+                    // Перетворюємо масив байтів у Uint8Array
+                    const fullPacket = new Uint8Array(this.receiveBuffer);
+                    this.receiveBuffer = []; // Очищаємо буфер для наступного разу
+
+                    // 2. Розпаковуємо
+                    const data = Protocol.unpack(fullPacket);
+                    if (data) {
+                        this.onMessage(data.cmdId, data.payload);
+                    }
+                } else {
+                    // 3. Це ще не кінець, додаємо в кошик
+                    this.receiveBuffer.push(byte);
+                }
             }
         });
 
@@ -45,14 +67,10 @@ export class BleClient {
     }
 
     async send(cmdId, payload = {}) {
-        if (!this.isConnected()) {
-            alert("Bluetooth is not connected!");
-            return;
-        }
-
-        console.log(`Sending CMD: ${cmdId}`, payload);
+        if (!this.isConnected()) return;
+        // Тут ми теж додаємо 0x03, хоча Raspberry це не обов'язково читає, 
+        // але це гарний тон дотримуватися одного протоколу.
         const packet = Protocol.pack(cmdId, payload);
-        
         await this.characteristic.writeValue(packet);
     }
     
