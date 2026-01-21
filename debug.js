@@ -1,10 +1,5 @@
 import { BleClient } from './ble-client.js';
 
-// Твої UUID
-const CONFIG = {
-    SRV_UUID: '12345678-1234-5678-1234-56789abcdef0',
-    CHAR_UUID: '12345678-1234-5678-1234-56789abcdef1'
-};
 
 const client = new BleClient(CONFIG.SRV_UUID, CONFIG.CHAR_UUID);
 

@@ -1,70 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BLE Raw Debugger</title>
-    <style>
-        body { font-family: monospace; padding: 20px; background: #222; color: #0f0; }
-        .container { max-width: 800px; margin: 0 auto; }
-        
-        /* Inputs */
-        input, textarea, button { 
-            background: #333; color: #fff; border: 1px solid #555; 
-            padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box;
-        }
-        button { cursor: pointer; background: #444; font-weight: bold; }
-        button:hover { background: #555; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .row { display: flex; gap: 10px; }
-        .col { flex: 1; }
-
-        /* Logs */
-        #logArea {
-            background: #111; border: 1px solid #444; 
-            height: 400px; overflow-y: auto; padding: 10px;
-            white-space: pre-wrap; font-size: 14px; margin-top: 20px;
-        }
-        .log-tx { color: #0ff; } /* Відправка - Блакитний */
-        .log-rx { color: #0f0; } /* Прийом - Зелений */
-        .log-err { color: #f55; } /* Помилка - Червоний */
-        .log-sys { color: #yy0; } /* Система - Жовтий */
-    </style>
+    <title>Raspberry Pi Wi-Fi Manager</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
-    <h2>🛠️ BLE Raw Debugger</h2>
-    
-    <button id="connectBtn">🔌 CONNECT BLE</button>
-    <div id="status">Status: Disconnected</div>
+    <div class="container">
+        <header>
+            <h1>Wi-Fi Manager</h1>
+            <div id="connectionStatus" class="status-badge disconnected">Disconnected</div>
+        </header>
 
-    <hr style="border-color: #444">
-
-    <div id="controls" style="opacity: 0.5; pointer-events: none;">
-        <div class="row">
-            <div class="col">
-                <label>Command ID (Send):</label>
-                <input type="number" id="cmdId" value="1" placeholder="Ex: 1 (Get Networks)">
-            </div>
-            <div class="col">
-                <label>Expected Resp ID:</label>
-                <input type="number" id="respId" value="2" placeholder="Ex: 2 (Get Networks Resp)">
-            </div>
+        <div id="connectSection">
+            <button id="bleConnectBtn" class="primary-btn">📡 Підключитися до Raspberry Pi</button>
         </div>
 
-        <label>Payload (JSON):</label>
-        <textarea id="payload" rows="3">{}</textarea>
-
-        <button id="sendBtn">📤 SEND REQUEST</button>
+        <div id="wifiSection" class="hidden">
+            <div class="wifi-header">
+                <h2>Доступні мережі</h2>
+                <button id="refreshBtn" class="icon-btn">🔄</button>
+            </div>
+            
+            <ul id="networkList" class="network-list">
+                <li class="loading">Очікування даних...</li>
+            </ul>
+        </div>
     </div>
 
-    <div id="logArea"></div>
-    <button onclick="document.getElementById('logArea').innerText = ''">Clear Logs</button>
-</div>
+    <div id="passwordModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Підключення до <span id="modalSsidName"></span></h3>
+            <input type="password" id="wifiPassword" placeholder="Введіть пароль" />
+            <div class="modal-actions">
+                <button id="cancelModalBtn" class="secondary-btn">Скасувати</button>
+                <button id="confirmConnectBtn" class="primary-btn">Підключитися</button>
+            </div>
+        </div>
+    </div>
 
-<script type="module" src="debug.js"></script>
-
+    <script type="module" src="app.js"></script>
 </body>
 </html>
