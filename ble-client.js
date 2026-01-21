@@ -49,6 +49,7 @@ export class BleClient {
             // Проходимо по кожному байту
             for (let i = 0; i < chunk.length; i++) {
                 const byte = chunk[i];
+                console.log(byte)
 
                 if (byte === 0x03) { 
                     // 1. Знайшли кінець повідомлення!
