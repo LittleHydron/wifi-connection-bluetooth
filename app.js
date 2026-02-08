@@ -154,7 +154,7 @@ const app = {
     async startSession() {
         try {
             ui.setBusy(true, ui.connectBtn);
-            await wifiService.connect();
+            await wifiService.connectClient();
             ui.setConnected(true);
             
             // Чекаємо секунду, щоб канал стабілізувався, і скануємо
