@@ -25,9 +25,15 @@ export class WifiConnectionService {
         };
     }
 
-    async connect() {
+    async connectClient() {
         if (!this.client.isConnected()) {
             await this.client.connect();
+        }
+    }
+
+    disconnectClient() {
+        if (this.client.isConnected()) {
+            this.client.disconnect();
         }
     }
 

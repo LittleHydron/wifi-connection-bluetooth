@@ -21,16 +21,20 @@ const ui = {
     cancelBtn: document.getElementById('cancelModalBtn'),
 
     // Функція перемикання статусу
+    disconnectBleBtn: document.getElementById('bleDisconnectBtn'),
+
     setConnected(isConnected) {
         if (isConnected) {
             this.status.textContent = "Connected via BLE";
             this.status.className = "status-badge connected";
             this.connectBtn.style.display = 'none';
+            this.disconnectBleBtn.classList.remove('hidden'); // Показуємо кнопку
             this.wifiSection.classList.remove('hidden');
         } else {
             this.status.textContent = "Disconnected";
             this.status.className = "status-badge disconnected";
             this.connectBtn.style.display = 'block';
+            this.disconnectBleBtn.classList.add('hidden'); // Ховаємо кнопку
             this.connectBtn.disabled = false;
             this.wifiSection.classList.add('hidden');
             this.wifiList.innerHTML = '';
@@ -115,6 +119,8 @@ const app = {
         // 1. Кнопка підключення до BLE
         ui.connectBtn.addEventListener('click', () => this.startSession());
 
+        ui.disconnectBleBtn.addEventListener('click', () => this.stopSession());
+
         // 2. Кнопка оновлення списку
         ui.refreshBtn.addEventListener('click', () => this.refreshNetworks());
 
@@ -131,6 +137,17 @@ const app = {
         // 4. Кнопки модального вікна
         ui.confirmBtn.addEventListener('click', () => this.confirmWifiConnection());
         ui.cancelBtn.addEventListener('click', () => ui.toggleModal(false));
+    },
+
+    // Метод для завершення BLE сесії
+    stopSession() {
+        try {
+            wifiService.disconnectClient();
+            ui.setConnected(false);
+            console.log("BLE сесію завершено користувачем");
+        } catch (e) {
+            console.error("Помилка при відключенні:", e);
+        }
     },
 
     // Початок роботи: конект до BLE + перше сканування

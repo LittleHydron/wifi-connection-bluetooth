@@ -113,3 +113,23 @@ input {
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .modal-actions button { width: auto; }
+.status-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.disconnect-link {
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0;
+}
+.disconnect-link:hover {
+    color: #ff0000;
+}
+.hidden {
+    display: none !important;
+}
